@@ -35,7 +35,7 @@
             top: 4px;
             left: 4px;
             font-family: "Press Start 2P", monospace;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: 400;
             line-height: 1.6;
             color: #ffffff;
@@ -57,11 +57,41 @@
             font-smooth: never;
             image-rendering: pixelated;
         }
+
+        #browser-info {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-family: "Press Start 2P", monospace;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0);
+            padding: 0px 0px;
+            border: 0px solid #00ff00;
+            border-radius: 4px;
+            text-shadow: 1px 1px 0px rgb(0, 0, 0);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0);
+            pointer-events: none;
+            user-select: none;
+            z-index: 1000;
+            white-space: pre;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+
+            /* Disable font antialiasing for pixelated look */
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+            font-smooth: never;
+            image-rendering: pixelated;
+        }
     </style>
-  <script type="module" crossorigin src="/Vitegame/assets/index-CD0w84hV.js"></script>
+  <script type="module" crossorigin src="/Vitegame/assets/index-HZ4pL8R2.js"></script>
 </head>
 <body>
     <div id="app"></div>
     <div id="performance-monitor"></div>
+    <div id="browser-info"></div>
 </body>
 </html>
