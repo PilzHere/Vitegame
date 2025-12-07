@@ -6,6 +6,8 @@ export default defineConfig({
     base: process.env.NODE_ENV === 'production' ? '/Vitegame/' : '/',
     root: '.',
     define: {
+        // Dev indicator - set at build time
+        __BUILD_TYPE__: JSON.stringify(process.env.NODE_ENV !== 'production' ? 'Development' : 'Release'),
         // Inject version from package.json
         __APP_VERSION__: JSON.stringify(
             JSON.parse(readFileSync('./package.json', 'utf-8')).version

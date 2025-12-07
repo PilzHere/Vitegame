@@ -1,7 +1,7 @@
 {
   "name": "web-game",
   "version": "0.0.1",
-  "state": "dev",
+  "state": "pre-alpha",
   "type": "module",
   "description": "A web-based game built with Three.js and Cannon.js",
   "scripts": {

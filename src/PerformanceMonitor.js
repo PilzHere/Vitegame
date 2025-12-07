@@ -355,7 +355,9 @@ export default class PerformanceMonitor {
 
             // Build stats display
             const stats = [
-                `${__APP_NAME__.toUpperCase()} v${__APP_VERSION__} ${__APP_STATE__} (build ${__BUILD_NUMBER__}) ${__GIT_HASH__}`,
+                `${__APP_NAME__.toUpperCase()} v${__APP_VERSION__} ${__APP_STATE__.toUpperCase()}`,
+                `${__BUILD_TYPE__} ${__BUILD_NUMBER__} #${__GIT_HASH__}`,
+                '',
                 ' RENDERER',
                 `  FPS: ${fps}`,
                 `  Frame time: ${averageFrameTime.toFixed(2)}ms`,
