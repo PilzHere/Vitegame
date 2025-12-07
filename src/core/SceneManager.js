@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import Ball from './entities/Ball.js';
-import Floor from './entities/Floor.js';
+import Ball from '../entities/Ball.js';
+import Floor from '../entities/Floor.js';
 
 export default class SceneManager {
     #entities = [];
@@ -58,12 +58,20 @@ export default class SceneManager {
     }
 
     async initEntities() {
-        // Add floor
-        const floor = new Floor(this.scene, this.world, this.floorMaterial);
+        // Add floor (with debug helpers enabled to show inefficient sphere culling)
+        const floor = new Floor(this.scene, this.world, this.floorMaterial, true);
         this.addEntity(floor);
 
-        // Add standard ball
-        const standardBall = new Ball(this.scene, this.world, { x: 0, y: 5, z: 0 }, false, this.ballMaterial);
+        // Add standard ball (with debug helpers enabled)
+        const standardBall = new Ball(
+            this.scene,
+            this.world,
+            { x: -2, y: 5, z: 0 },
+            false,
+            this.ballMaterial,
+            null,
+            true // Enable debug helpers
+        );
         await standardBall.initPromise;
         this.addEntity(standardBall);
 
@@ -71,6 +79,18 @@ export default class SceneManager {
         const customShaderBall = new Ball(this.scene, this.world, { x: 0, y: 7, z: 0 }, true, this.ballMaterial);
         await customShaderBall.initPromise;
         this.addEntity(customShaderBall);
+
+        // Add ball with textured shader
+        const texturedBall = new Ball(
+            this.scene,
+            this.world,
+            { x: 2, y: 9, z: 0 },
+            false,
+            this.ballMaterial,
+            { shaderName: 'texturedShader', textureName: 'ballTexture' }
+        );
+        await texturedBall.initPromise;
+        this.addEntity(texturedBall);
 
         this.#entityCount = this.#entities.length;
     }
@@ -80,15 +100,19 @@ export default class SceneManager {
     }
 
     removeEntityById(id) {
-        this.#entities = this.#entities.filter(e => e.id !== id);
+        const entity = this.#entities.find(e => e.getId() === id);
+        if (entity) {
+            entity.destroy();
+        }
+        this.#entities = this.#entities.filter(e => e.getId() !== id);
     }
 
-    
+
     #preUpdate() {
         // Remove entities marked for deletion
         for (const entity of this.#entities) {
-            if (entity.toBeDeleted) {
-                this.removeEntityById(entity.id);
+            if (entity.getToBeDeleted()) {
+                this.removeEntityById(entity.getId());
             }
         }
     }

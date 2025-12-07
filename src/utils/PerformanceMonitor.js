@@ -1,3 +1,5 @@
+import Logger from './Logger.js';
+
 export default class PerformanceMonitor {
     // Public
     renderer;
