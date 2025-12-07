@@ -1,7 +1,18 @@
 import { EntityTypes } from './EntityTypes.js';
 
 export default class Entity {
-    #id = crypto.randomUUID();
+    #id = (() => {
+        // Use crypto.randomUUID if available, otherwise fall back to polyfill
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback UUID v4 generation for older browsers/environments
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    })();
     #toBeDeleted = false;
     #type = EntityTypes.UNKNOWN;
 
