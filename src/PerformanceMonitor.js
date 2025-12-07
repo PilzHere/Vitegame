@@ -5,6 +5,7 @@ export default class PerformanceMonitor {
 
     // Private
     #element;
+    #browserInfoElement;
     #frameIndex = 0;
     #frameCount = 0;
     #frames = new Array(60).fill(0);
@@ -34,6 +35,7 @@ export default class PerformanceMonitor {
         this.renderer = renderer;
         this.sceneManager = sceneManager;
         this.#element = document.getElementById('performance-monitor');
+        this.#browserInfoElement = document.getElementById('browser-info');
 
         // Collect static system info once
         const gl = this.renderer.renderer.getContext();
@@ -357,33 +359,30 @@ export default class PerformanceMonitor {
             const stats = [
                 `${__APP_NAME__.toUpperCase()} v${__APP_VERSION__} ${__APP_STATE__.toUpperCase()}`,
                 `${__BUILD_TYPE__} ${__BUILD_NUMBER__} #${__GIT_HASH__}`,
+                'RENDERER',
+                ` FPS: ${fps}`,
+                ` Frame time: ${averageFrameTime.toFixed(2)}ms`,
+                ` Drawcalls: ${render.calls}`,
+                ` Triangles: ${this.formatNumber(render.triangles)}`,
+                ` Shaders: ${info.programs.length}`,
+                ` Textures: ${memory.textures}`,
+                ` Geometries: ${memory.geometries}`,
+                ` Lines: ${this.formatNumber(render.lines)}`,
+                ` Points: ${this.formatNumber(render.points)}`,
                 '',
-                ' RENDERER',
-                `  FPS: ${fps}`,
-                `  Frame time: ${averageFrameTime.toFixed(2)}ms`,
-                `  Drawcalls: ${render.calls}`,
-                `  Triangles: ${this.formatNumber(render.triangles)}`,
-                `  Shaders: ${info.programs.length}`,
-                `  Textures: ${memory.textures}`,
-                `  Geometries: ${memory.geometries}`,
-                `  Lines: ${this.formatNumber(render.lines)}`,
-                `  Points: ${this.formatNumber(render.points)}`,
-                '',
-                `  Resolution: ${canvas.width}x${canvas.height}`,
-                `  Viewport: ${window.innerWidth}x${window.innerHeight}`,
-                `  Pixel ratio: ${this.#pixelRatio.toFixed(1)}`,
-                `  Frame: ${render.frame}`,
-                `  AA: ${this.#antialiasEnabled ? 'On' : 'Off'}`,
-                `  API: ${this.#api}`,
-                '',
-                ' CAMERA',
-                `  Pos: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`,
-                `  Rot: ${(camera.rotation.x * 180 / Math.PI).toFixed(1)}°, ${(camera.rotation.y * 180 / Math.PI).toFixed(1)}°, ${(camera.rotation.z * 180 / Math.PI).toFixed(1)}°`,
-                '',
-                ' DATA',
-                `  Entities: ${this.sceneManager.getEntityCount()}`,
-                `  Bodies: ${this.sceneManager.world.bodies.length}`,
-                `  Uptime: ${uptime}`,
+                ` Resolution: ${canvas.width}x${canvas.height}`,
+                ` Viewport: ${window.innerWidth}x${window.innerHeight}`,
+                ` Pixel ratio: ${this.#pixelRatio.toFixed(1)}`,
+                ` Frame: ${render.frame}`,
+                ` AA: ${this.#antialiasEnabled ? 'On' : 'Off'}`,
+                ` API: ${this.#api}`,
+                'CAMERA',
+                ` Pos: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`,
+                ` Rot: ${(camera.rotation.x * 180 / Math.PI).toFixed(1)}°, ${(camera.rotation.y * 180 / Math.PI).toFixed(1)}°, ${(camera.rotation.z * 180 / Math.PI).toFixed(1)}°`,
+                'DATA',
+                ` Entities: ${this.sceneManager.getEntityCount()}`,
+                ` Bodies: ${this.sceneManager.world.bodies.length}`,
+                ` Uptime: ${uptime}`,
                 '',
                 'SYSTEM',
                 ` OS: ${this.#platform}`,
@@ -393,12 +392,17 @@ export default class PerformanceMonitor {
                 `  Vendor: ${this.#gpuVendor}`,
                 ` Touch: ${this.#hasTouch}`,
                 '',
-                ' BROWSER',
-                `  Browser: ${this.#browserName} ${this.#browserVersion}`,
-                `  JS Heap: ${memoryInfo}`,
             ];
 
             this.#element.textContent = stats.join('\n');
+
+            // Display browser info in upper right
+            const browserStats = [
+                'BROWSER',
+                `${this.#browserName} ${this.#browserVersion}`,
+                `Heap: ${memoryInfo}`,
+            ];
+            this.#browserInfoElement.textContent = browserStats.join('\n');
         }
     }
 
