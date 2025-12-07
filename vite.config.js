@@ -15,16 +15,17 @@ export default defineConfig({
         __APP_STATE__: JSON.stringify(
             JSON.parse(readFileSync('./package.json', 'utf-8')).state
         ),
-        // Generate build number from git commit count or timestamp
+        // Generate build number as timestamp: YYYYMMDDHHMMSS
         __BUILD_NUMBER__: JSON.stringify(
             (() => {
-                try {
-                    // Try to get git commit count
-                    return execSync('git rev-list --count HEAD').toString().trim();
-                } catch (e) {
-                    // Fallback to timestamp if not a git repo
-                    return Date.now().toString();
-                }
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hour = String(now.getHours()).padStart(2, '0');
+                const minute = String(now.getMinutes()).padStart(2, '0');
+                const second = String(now.getSeconds()).padStart(2, '0');
+                return `${year}${month}${day}${hour}${minute}${second}`;
             })()
         ),
         // Git commit hash (short)
@@ -33,7 +34,7 @@ export default defineConfig({
                 try {
                     return execSync('git rev-parse --short HEAD').toString().trim();
                 } catch (e) {
-                    return 'unknown';
+                    return 'hash';
                 }
             })()
         ),
@@ -43,7 +44,7 @@ export default defineConfig({
                 try {
                     return execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
                 } catch (e) {
-                    return 'unknown';
+                    return 'branch';
                 }
             })()
         ),
