@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 export default defineConfig({
+    base: process.env.NODE_ENV === 'production' ? '/Vitegame/' : '/',
     root: '.',
     define: {
         // Inject version from package.json
