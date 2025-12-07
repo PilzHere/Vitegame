@@ -177,6 +177,19 @@ class AssetLoader {
         }
     }
 
+    async loadShaderFromSource(name, vertexSource, fragmentSource) {
+        // Check if already loaded
+        if (this.#shaders.has(name)) {
+            Logger.warn(`Shader '${name}' already loaded. Skipping.`);
+            return this.#shaders.get(name);
+        }
+
+        this.#shaders.set(name, { vertex: vertexSource, fragment: fragmentSource });
+        this.#updateProgress();
+        Logger.success(`Shader loaded: ${name}`);
+        return { vertex: vertexSource, fragment: fragmentSource };
+    }
+
     async loadShader(name, vertexUrl, fragmentUrl) {
         // Check if already loaded
         if (this.#shaders.has(name)) {
@@ -246,7 +259,12 @@ class AssetLoader {
                 case 'music':
                     return this.loadMusic(asset.name, asset.url);
                 case 'shader':
-                    return this.loadShader(asset.name, asset.vertexUrl, asset.fragmentUrl);
+                    // Support both URL-based and source-based shader loading
+                    if (asset.vertexSource && asset.fragmentSource) {
+                        return this.loadShaderFromSource(asset.name, asset.vertexSource, asset.fragmentSource);
+                    } else {
+                        return this.loadShader(asset.name, asset.vertexUrl, asset.fragmentUrl);
+                    }
                 default:
                     Logger.warn(`Unknown asset type: ${asset.type}`);
                     this.#updateProgress();

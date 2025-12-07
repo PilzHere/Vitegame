@@ -5,6 +5,12 @@ import PerformanceMonitor from '../utils/PerformanceMonitor.js';
 import AssetLoader from './AssetLoader.js';
 import DebugHelpers from '../utils/DebugHelpers.js';
 
+// Import shaders as raw text (Vite will bundle them)
+import basicVertShader from '../assets/shaders/basic/basic.vert?raw';
+import basicFragShader from '../assets/shaders/basic/basic.frag?raw';
+import texturedVertShader from '../assets/shaders/textured/textured.vert?raw';
+import texturedFragShader from '../assets/shaders/textured/textured.frag?raw';
+
 export default class Game {
     #keyF3Pressed = false;
     #keyF4Pressed = false;
@@ -39,14 +45,14 @@ export default class Game {
             {
                 type: 'shader',
                 name: 'ballShader',
-                vertexUrl: '/src/assets/shaders/basic/basic.vert',
-                fragmentUrl: '/src/assets/shaders/basic/basic.frag'
+                vertexSource: basicVertShader,
+                fragmentSource: basicFragShader
             },
             {
                 type: 'shader',
                 name: 'texturedShader',
-                vertexUrl: '/src/assets/shaders/textured/textured.vert',
-                fragmentUrl: '/src/assets/shaders/textured/textured.frag'
+                vertexSource: texturedVertShader,
+                fragmentSource: texturedFragShader
             },
             {
                 type: 'texture',
