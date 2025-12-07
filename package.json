@@ -1,0 +1,19 @@
+{
+  "name": "web-game",
+  "version": "0.0.1",
+  "state": "dev",
+  "type": "module",
+  "description": "A web-based game built with Three.js and Cannon.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.181.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
