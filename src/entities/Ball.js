@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Entity from './Entity.js';
+import vertexShaderSource from '../assets/shaders/basic/basic.vert?raw';
+import fragmentShaderSource from '../assets/shaders/basic/basic.frag?raw';
 
 export default class Ball extends Entity {
     constructor(scene, world, position = { x: 0, y: 5, z: 0 }, useCustomShader = false, material = null) {
@@ -22,15 +24,10 @@ export default class Ball extends Entity {
         let mat;
         if (this.useCustomShader) {
             try {
-                // Load custom shaders
-                console.log('Loading custom shaders...');
-                const vertexShader = await fetch('/src/assets/shaders/basic/basic.vert').then(r => r.text());
-                const fragmentShader = await fetch('/src/assets/shaders/basic/basic.frag').then(r => r.text());
-
-                console.log('Shaders loaded, creating material...');
+                console.log('Creating custom shader material...');
                 mat = new THREE.ShaderMaterial({
-                    vertexShader,
-                    fragmentShader,
+                    vertexShader: vertexShaderSource,
+                    fragmentShader: fragmentShaderSource,
                     uniforms: {
                         uColor: { value: new THREE.Color(0x5d9cf0) }, // Blue for custom shader
                         uTime: { value: 0.0 }
@@ -39,7 +36,7 @@ export default class Ball extends Entity {
                 });
                 console.log('Custom shader material created successfully');
             } catch (error) {
-                console.error('Error loading custom shaders:', error);
+                console.error('Error creating custom shader:', error);
                 // Fallback to standard material
                 mat = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red to indicate error
             }
