@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A web-based game built with Three.js and Cannon.js physics engine">
+    <meta name="keywords" content="web game, three.js, cannon.js, 3D game, browser game">
+    <meta name="author" content="PilzHere">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Web Game">
+    <meta property="og:description" content="A web-based game built with Three.js and Cannon.js physics engine">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Web Game">
+    <meta name="twitter:description" content="A web-based game built with Three.js and Cannon.js physics engine">
+
+    <title>Web game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        html, body, #app {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+        }
+
+        #performance-monitor {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-family: "Press Start 2P", monospace;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.6;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0);
+            padding: 0px 0px;
+            border: 0px solid #00ff00;
+            border-radius: 4px;
+            text-shadow: 1px 1px 0px rgb(0, 0, 0);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0);
+            pointer-events: none;
+            user-select: none;
+            z-index: 1000;
+            white-space: pre;
+            font-variant-numeric: tabular-nums;
+
+            /* Disable font antialiasing for pixelated look */
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+            font-smooth: never;
+            image-rendering: pixelated;
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/index-8dj_S1Yr.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+    <div id="performance-monitor"></div>
+</body>
+</html>
