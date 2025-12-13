@@ -5,18 +5,24 @@ import { EntityTypes } from './EntityTypes.js';
 import Logger from '../utils/Logger.js';
 import AssetLoader from '../core/AssetLoader.js';
 import DebugHelpers from '../utils/DebugHelpers.js';
+import { CollisionGroups, CollisionMasks } from '../physics/CollisionGroups.js';
 
 export default class Ball extends Entity {
-    constructor(scene, world, position = { x: 0, y: 5, z: 0 }, useCustomShader = false, material = null, textureConfig = null, enableDebugHelpers = false) {
+    constructor(scene, world, position = { x: 0, y: 5, z: 0 }, useCustomShader = false, material = null, textureConfig = null, enableDebugHelpers = false, audioManager = null, canJump = false, billboardParticleSystem = null, spriteParticleSystem = null) {
         super(EntityTypes.BALL);
 
         this.scene = scene;
         this.world = world;
         this.assetLoader = AssetLoader.getInstance();
+        this.audioManager = audioManager;
         this.useCustomShader = useCustomShader;
         this.physicsMaterial = material;
         this.textureConfig = textureConfig; // { shaderName, textureName }
         this.enableDebugHelpers = enableDebugHelpers;
+        this.canJump = canJump; // Whether this ball can jump with E key
+        this.billboardParticleSystem = billboardParticleSystem; // Billboard particle system for visual effects
+        this.spriteParticleSystem = spriteParticleSystem; // Sprite particle system for complex effects
+        this.wasGrounded = false; // Track if ball was on ground last frame
 
         // Initialize async
         this.initPromise = this.init(position);
@@ -91,13 +97,17 @@ export default class Ball extends Entity {
         this.scene.add(this.mesh);
 
         // Physics
+        const ballShape = new CANNON.Sphere(0.5);
         this.body = new CANNON.Body({
             mass: 1,
-            shape: new CANNON.Sphere(0.5),
             position: new CANNON.Vec3(position.x, position.y, position.z),
             linearDamping: 0.01,
-            material: this.physicsMaterial
+            material: this.physicsMaterial,
+            // Collision filtering using bitmasks (faster than entity type checking)
+            collisionFilterGroup: CollisionGroups.BALL,
+            collisionFilterMask: CollisionMasks.BALL
         });
+        this.body.addShape(ballShape);
 
         // Store reference to this entity on the body for collision lookup
         this.body.userData = { entity: this };
@@ -126,13 +136,23 @@ export default class Ball extends Entity {
         const shaderType = this.textureConfig ? 'textured' : (this.useCustomShader ? 'custom' : 'standard');
         Logger.info(`Ball initialized at position (${position.x}, ${position.y}, ${position.z}), shader type: ${shaderType}`);
     }
-
-    update() {
-        // Don't update if not initialized yet
+    /**
+     * Update mesh position and rotation based on physics body
+     * Uses interpolated values for smooth 60 FPS rendering even with 15 Hz physics
+     */
+    update(inputManager) {
         if (!this.mesh || !this.body) return;
 
-        this.mesh.position.copy(this.body.position);
-        this.mesh.quaternion.copy(this.body.quaternion);
+        // Handle jump input if this ball can jump
+        if (this.canJump && inputManager && inputManager.isKeyJustPressed('KeyE')) {
+            this.#jump();
+        }
+
+        // Use interpolated position/rotation from Cannon.js for smooth rendering
+        // Physics runs at 20 Hz, but interpolatedPosition/interpolatedQuaternion
+        // give us smooth values for 60 FPS rendering (Minecraft-style)
+        this.mesh.position.copy(this.body.interpolatedPosition);
+        this.mesh.quaternion.copy(this.body.interpolatedQuaternion);
 
         // Update shader time uniform if using custom shader or textured shader
         if ((this.useCustomShader || this.textureConfig) && this.mesh.material.uniforms?.uTime) {
@@ -142,6 +162,50 @@ export default class Ball extends Entity {
         // Update debug helpers if enabled
         if (this.enableDebugHelpers) {
             DebugHelpers.updateBoundingSphereHelpers();
+        }
+    }
+
+    #jump() {
+        if (!this.body) return;
+
+        // Wake up the body if it's sleeping
+        this.body.wakeUp();
+
+        // Apply upward impulse to make the ball jump
+        const jumpForce = 4; // Adjust for desired jump height
+        this.body.velocity.y = jumpForce;
+
+        // Emit sprite particles with rotation (blue swirling puff at launch)
+        if (this.spriteParticleSystem) {
+            this.spriteParticleSystem.emitBurst(8, {
+                x: this.body.position.x,
+                y: this.body.position.y - 0.5, // Below ball
+                z: this.body.position.z,
+                color: 0x5d9cf0, // Match blue ball color
+                size: 0.3,
+                endSize: 0.05,
+                lifetime: 0.6,
+                spread: 1.2,
+                upwardForce: 2,
+                gravity: -3,
+                angularVelocity: (Math.random() - 0.5) * 10, // Random spin
+                fadeOut: true
+            });
+        }
+
+        // Also emit fast billboard particles for extra sparkle
+        if (this.billboardParticleSystem) {
+            this.billboardParticleSystem.emitBurst(12, {
+                x: this.body.position.x,
+                y: this.body.position.y - 0.5,
+                z: this.body.position.z,
+                color: 0xaaddff, // Light blue sparkle
+                size: 0.05,
+                lifetime: 0.3,
+                spread: 2,
+                upwardForce: 3,
+                gravity: -5
+            });
         }
     }
 
@@ -168,10 +232,36 @@ export default class Ball extends Entity {
     }
 
     #handleFloorCollision(floor, collision) {
-        Logger.debug('Ball hit the floor');
-        // Handle floor bounce, play sound, etc.
+        // Get collision impact velocity
+        const impactVelocity = collision.contact.getImpactVelocityAlongNormal();
 
-        //this.markForDeletion();
+        // Only play sound if impact is strong enough (avoid rolling sounds)
+        if (Math.abs(impactVelocity) > 1.0) {
+            // Play bounce sound with volume based on impact strength
+            if (this.audioManager) {
+                // Volume scales with impact (clamped between 0.1 and 1.0)
+                const volume = Math.min(1.0, Math.max(0.1, Math.abs(impactVelocity) / 10));
+                this.audioManager.playSound('bounce', volume);
+            }
+
+            // Emit landing particles for blue ball (if it has billboard particle system)
+            if (this.billboardParticleSystem && this.canJump) {
+                const particleCount = Math.min(25, Math.floor(Math.abs(impactVelocity) * 3));
+                this.billboardParticleSystem.emitBurst(particleCount, {
+                    x: this.body.position.x,
+                    y: 0.1, // Just above floor
+                    z: this.body.position.z,
+                    color: 0xcccccc, // Gray dust
+                    size: 0.06,
+                    lifetime: 0.5,
+                    spread: 2,
+                    upwardForce: Math.abs(impactVelocity) * 0.5,
+                    gravity: -9.82
+                });
+            }
+
+            Logger.debug(`Ball hit floor with velocity: ${impactVelocity.toFixed(2)}`);
+        }
     }
 
     #handleBallCollision(ball, collision) {

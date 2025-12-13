@@ -4,6 +4,7 @@ export default class PerformanceMonitor {
     // Public
     renderer;
     sceneManager;
+    postProcessing;
 
     // Private
     #element;
@@ -32,15 +33,21 @@ export default class PerformanceMonitor {
     #maxFPSReached = 60;
     #numberFormatter = new Intl.NumberFormat('en-US');
     #MB = 1024 * 1024;
+    #shaderSwitches = 0;
+    #currentProgram = null;
 
-    constructor(renderer, sceneManager) {
+    constructor(renderer, sceneManager, postProcessing) {
         this.renderer = renderer;
         this.sceneManager = sceneManager;
+        this.postProcessing = postProcessing;
         this.#element = document.getElementById('performance-monitor');
         this.#browserInfoElement = document.getElementById('browser-info');
 
         // Collect static system info once
         const gl = this.renderer.renderer.getContext();
+
+        // Hook into WebGL useProgram to count shader switches
+        this.#setupShaderSwitchTracking(gl);
 
         // GPU info
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
@@ -97,6 +104,21 @@ export default class PerformanceMonitor {
         window.addEventListener('resize', () => {
             this.#chartCanvas.width = window.innerWidth;
         });
+    }
+
+    /**
+     * Hooks into WebGL useProgram to track shader switches
+     * @param {WebGLRenderingContext} gl - WebGL context
+     */
+    #setupShaderSwitchTracking(gl) {
+        const originalUseProgram = gl.useProgram.bind(gl);
+        gl.useProgram = (program) => {
+            if (program !== this.#currentProgram && program !== null) {
+                this.#shaderSwitches++;
+                this.#currentProgram = program;
+            }
+            originalUseProgram(program);
+        };
     }
 
     /**
@@ -331,9 +353,16 @@ export default class PerformanceMonitor {
             // Get dynamic renderer info
             const info = this.renderer.renderer.info;
             const memory = info.memory;
-            const render = info.render;
+            // Get accurate scene render stats (not post-processing overhead)
+            const render = this.postProcessing ?
+                this.postProcessing.getSceneRenderInfo() :
+                info.render;
             const canvas = this.renderer.renderer.domElement;
             const camera = this.renderer.camera;
+
+            // Capture shader switches for this frame then reset
+            const shaderSwitches = this.#shaderSwitches;
+            this.#shaderSwitches = 0;
 
             // Get dynamic memory info (Chrome/Edge only) - use cached MB constant
             let memoryInfo = 'N/A';
@@ -365,12 +394,13 @@ export default class PerformanceMonitor {
                 ` FPS: ${fps}`,
                 ` Frame time: ${averageFrameTime.toFixed(2)}ms`,
                 ` Drawcalls: ${render.calls}`,
+                ` Shader switches: ${shaderSwitches}`,
                 ` Triangles: ${this.formatNumber(render.triangles)}`,
-                ` Shaders: ${info.programs.length}`,
-                ` Textures: ${memory.textures}`,
-                ` Geometries: ${memory.geometries}`,
                 ` Lines: ${this.formatNumber(render.lines)}`,
                 ` Points: ${this.formatNumber(render.points)}`,
+                ` Shaders: ${info.programs.length}`,
+                ` Textures: ${memory.textures}`,
+                ` Geometries: ${memory.geometries}`,                
                 '',
                 ` Resolution: ${canvas.width}x${canvas.height}`,
                 ` Viewport: ${window.innerWidth}x${window.innerHeight}`,

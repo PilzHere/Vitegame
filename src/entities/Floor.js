@@ -4,6 +4,7 @@ import Entity from './Entity.js';
 import { EntityTypes } from './EntityTypes.js';
 import DebugHelpers from '../utils/DebugHelpers.js';
 import Logger from '../utils/Logger.js';
+import { CollisionGroups, CollisionMasks } from '../physics/CollisionGroups.js';
 
 export default class Floor extends Entity {
     constructor(scene, world, material = null, enableDebugHelpers = false) {
@@ -14,7 +15,7 @@ export default class Floor extends Entity {
 
         const width = 20;
         const depth = 20;
-        const thickness = 0.01; // Very thin but not zero to avoid collision issues
+        const thickness = 1.0; // Thick floor to prevent tunneling at 15 Hz physics
 
         // Mesh
         const geo = new THREE.PlaneGeometry(width, depth);
@@ -36,7 +37,10 @@ export default class Floor extends Entity {
         this.body = new CANNON.Body({
             mass: 0,
             material: material,
-            position: new CANNON.Vec3(0, -thickness / 2, 0) // Half-thickness below ground
+            position: new CANNON.Vec3(0, -thickness / 2, 0), // Half-thickness below ground
+            // Collision filtering using bitmasks (faster than entity type checking)
+            collisionFilterGroup: CollisionGroups.FLOOR,
+            collisionFilterMask: CollisionMasks.FLOOR
         });
         this.body.addShape(shape);
 
@@ -56,8 +60,8 @@ export default class Floor extends Entity {
         world.addBody(this.body);
     }
 
-    update() {
-        // Golvet är statiskt, ingen uppdatering behövs
+    update(inputManager) {
+        // Floor is static, no update needed
     }
 
     destroy() {

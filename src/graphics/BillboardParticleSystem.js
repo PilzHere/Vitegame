@@ -1,20 +1,29 @@
 import * as THREE from 'three';
 
-export default class ParticleSystem {
+/**
+ * Billboard particle system (particles always face camera)
+ * Uses THREE.Points for efficient batch rendering
+ * Supports particle pooling for performance
+ */
+export default class BillboardParticleSystem {
+    #scene;
+    #maxParticles;
+    #particles = [];
+    #particlePool = [];
+    #particleMesh;
+
     constructor(scene, maxParticles = 1000) {
-        this.scene = scene;
-        this.maxParticles = maxParticles;
-        this.particles = [];
-        this.particlePool = [];
+        this.#scene = scene;
+        this.#maxParticles = maxParticles;
 
         this.#createParticleGeometry();
     }
 
     #createParticleGeometry() {
         const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(this.maxParticles * 3);
-        const colors = new Float32Array(this.maxParticles * 3);
-        const sizes = new Float32Array(this.maxParticles);
+        const positions = new Float32Array(this.#maxParticles * 3);
+        const colors = new Float32Array(this.#maxParticles * 3);
+        const sizes = new Float32Array(this.#maxParticles);
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -25,11 +34,13 @@ export default class ParticleSystem {
             vertexColors: true,
             transparent: true,
             opacity: 0.8,
-            sizeAttenuation: true
+            sizeAttenuation: true,
+            depthWrite: false, // Prevent particles from blocking each other
+            blending: THREE.AdditiveBlending // Glowy effect
         });
 
-        this.particleMesh = new THREE.Points(geometry, material);
-        this.scene.add(this.particleMesh);
+        this.#particleMesh = new THREE.Points(geometry, material);
+        this.#scene.add(this.#particleMesh);
     }
 
     emit(config = {}) {
@@ -51,7 +62,7 @@ export default class ParticleSystem {
             gravity: config.gravity !== undefined ? config.gravity : -9.82
         };
 
-        this.particles.push(particle);
+        this.#particles.push(particle);
     }
 
     emitBurst(count, config = {}) {
@@ -61,14 +72,14 @@ export default class ParticleSystem {
     }
 
     update(deltaTime) {
-        const positions = this.particleMesh.geometry.attributes.position.array;
-        const colors = this.particleMesh.geometry.attributes.color.array;
-        const sizes = this.particleMesh.geometry.attributes.size.array;
+        const positions = this.#particleMesh.geometry.attributes.position.array;
+        const colors = this.#particleMesh.geometry.attributes.color.array;
+        const sizes = this.#particleMesh.geometry.attributes.size.array;
 
         let particleIndex = 0;
 
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const particle = this.particles[i];
+        for (let i = this.#particles.length - 1; i >= 0; i--) {
+            const particle = this.#particles[i];
 
             particle.velocity.y += particle.gravity * deltaTime;
             particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
@@ -76,7 +87,7 @@ export default class ParticleSystem {
             particle.life -= deltaTime;
 
             if (particle.life <= 0) {
-                this.particles.splice(i, 1);
+                this.#particles.splice(i, 1);
                 continue;
             }
 
@@ -95,25 +106,41 @@ export default class ParticleSystem {
             particleIndex++;
         }
 
-        for (let i = particleIndex; i < this.maxParticles; i++) {
+        for (let i = particleIndex; i < this.#maxParticles; i++) {
             positions[i * 3] = 0;
             positions[i * 3 + 1] = 0;
             positions[i * 3 + 2] = 0;
             sizes[i] = 0;
         }
 
-        this.particleMesh.geometry.attributes.position.needsUpdate = true;
-        this.particleMesh.geometry.attributes.color.needsUpdate = true;
-        this.particleMesh.geometry.attributes.size.needsUpdate = true;
+        // Set draw range to only render active particles
+        this.#particleMesh.geometry.setDrawRange(0, particleIndex);
+
+        this.#particleMesh.geometry.attributes.position.needsUpdate = true;
+        this.#particleMesh.geometry.attributes.color.needsUpdate = true;
+        this.#particleMesh.geometry.attributes.size.needsUpdate = true;
     }
 
     clear() {
-        this.particles = [];
+        this.#particles = [];
     }
 
     destroy() {
-        this.scene.remove(this.particleMesh);
-        this.particleMesh.geometry.dispose();
-        this.particleMesh.material.dispose();
+        this.#scene.remove(this.#particleMesh);
+        this.#particleMesh.geometry.dispose();
+        this.#particleMesh.material.dispose();
+    }
+
+    // Getters for external access
+    get particleCount() {
+        return this.#particles.length;
+    }
+
+    get maxParticles() {
+        return this.#maxParticles;
+    }
+
+    get mesh() {
+        return this.#particleMesh;
     }
 }

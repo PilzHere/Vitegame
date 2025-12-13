@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import Logger from '../utils/Logger.js';
+import TextureAtlas from '../graphics/TextureAtlas.js';
 
 class AssetLoader {
     static #instance = null;
@@ -19,6 +20,7 @@ class AssetLoader {
     #sounds = new Map();
     #music = new Map();
     #shaders = new Map();
+    #atlases = new Map();
 
     #loadingProgress = 0;
     #totalAssets = 0;
@@ -241,6 +243,54 @@ class AssetLoader {
         return this.#shaders.get(name);
     }
 
+    /**
+     * Load texture atlas (sprite sheet)
+     * @param {string} name - Atlas name
+     * @param {string} imageUrl - URL to atlas image
+     * @param {Object|string} atlasData - Atlas JSON data or URL to JSON file
+     * @returns {Promise<TextureAtlas>}
+     */
+    async loadAtlas(name, imageUrl, atlasData = null) {
+        if (this.#atlases.has(name)) {
+            Logger.warn(`Atlas '${name}' already loaded. Skipping.`);
+            return this.#atlases.get(name);
+        }
+
+        try {
+            // Load image
+            const image = new Image();
+            image.src = imageUrl;
+            await image.decode();
+
+            // Load atlas data if it's a URL
+            let data = atlasData;
+            if (typeof atlasData === 'string') {
+                const response = await fetch(atlasData);
+                data = await response.json();
+            }
+
+            // Create atlas
+            const atlas = new TextureAtlas(image, data);
+            this.#atlases.set(name, atlas);
+            this.#updateProgress();
+            Logger.success(`Atlas loaded: ${name} (${atlas.frameCount} frames)`);
+            return atlas;
+        } catch (error) {
+            Logger.error(`Failed to load atlas: ${name}`, error);
+            this.#updateProgress();
+            throw error;
+        }
+    }
+
+    /**
+     * Get texture atlas by name
+     * @param {string} name - Atlas name
+     * @returns {TextureAtlas|undefined}
+     */
+    getAtlas(name) {
+        return this.#atlases.get(name);
+    }
+
     async loadAssets(assetList) {
         this.#totalAssets = assetList.length;
         this.#loadedAssets = 0;
@@ -265,6 +315,8 @@ class AssetLoader {
                     } else {
                         return this.loadShader(asset.name, asset.vertexUrl, asset.fragmentUrl);
                     }
+                case 'atlas':
+                    return this.loadAtlas(asset.name, asset.imageUrl, asset.atlasData);
                 default:
                     Logger.warn(`Unknown asset type: ${asset.type}`);
                     this.#updateProgress();
@@ -347,6 +399,19 @@ class AssetLoader {
 
     getTotalCount() {
         return this.#totalAssets;
+    }
+
+    getCurrentAssetCount() {
+        return {
+            textures: this.#textures.size,
+            models: this.#models.size,
+            fonts: this.#fonts.size,
+            sounds: this.#sounds.size,
+            music: this.#music.size,
+            shaders: this.#shaders.size,
+            total: this.#textures.size + this.#models.size + this.#fonts.size +
+                   this.#sounds.size + this.#music.size + this.#shaders.size
+        };
     }
 }
 

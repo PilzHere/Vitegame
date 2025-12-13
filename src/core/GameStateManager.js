@@ -1,4 +1,8 @@
+import Logger from '../utils/Logger.js';
+
 export default class GameStateManager {
+    static #instance = null;
+
     static States = {
         LOADING: 'loading',
         MENU: 'menu',
@@ -7,14 +11,27 @@ export default class GameStateManager {
         GAME_OVER: 'gameover'
     };
 
+    #currentState = GameStateManager.States.LOADING;
+    #previousState = null;
+    #stateHandlers = new Map();
+
     constructor() {
-        this.currentState = GameStateManager.States.LOADING;
-        this.previousState = null;
-        this.stateHandlers = new Map();
+        if (GameStateManager.#instance) {
+            return GameStateManager.#instance;
+        }
+
+        GameStateManager.#instance = this;
+    }
+
+    static getInstance() {
+        if (!GameStateManager.#instance) {
+            GameStateManager.#instance = new GameStateManager();
+        }
+        return GameStateManager.#instance;
     }
 
     registerState(state, handlers = {}) {
-        this.stateHandlers.set(state, {
+        this.#stateHandlers.set(state, {
             onEnter: handlers.onEnter || (() => {}),
             onExit: handlers.onExit || (() => {}),
             onUpdate: handlers.onUpdate || (() => {})
@@ -22,36 +39,40 @@ export default class GameStateManager {
     }
 
     changeState(newState) {
-        if (this.currentState === newState) return;
+        if (this.#currentState === newState) return;
 
-        const currentHandlers = this.stateHandlers.get(this.currentState);
+        const currentHandlers = this.#stateHandlers.get(this.#currentState);
         if (currentHandlers) {
             currentHandlers.onExit();
         }
 
-        this.previousState = this.currentState;
-        this.currentState = newState;
+        this.#previousState = this.#currentState;
+        this.#currentState = newState;
 
-        const newHandlers = this.stateHandlers.get(newState);
+        const newHandlers = this.#stateHandlers.get(newState);
         if (newHandlers) {
             newHandlers.onEnter();
         }
 
-        console.log(`State changed: ${this.previousState} -> ${this.currentState}`);
+        Logger.info(`State changed: ${this.#previousState} -> ${this.#currentState}`);
     }
 
     update(deltaTime) {
-        const handlers = this.stateHandlers.get(this.currentState);
+        const handlers = this.#stateHandlers.get(this.#currentState);
         if (handlers && handlers.onUpdate) {
             handlers.onUpdate(deltaTime);
         }
     }
 
-    getCurrentState() {
-        return this.currentState;
+    get currentState() {
+        return this.#currentState;
+    }
+
+    get previousState() {
+        return this.#previousState;
     }
 
     isState(state) {
-        return this.currentState === state;
+        return this.#currentState === state;
     }
 }
