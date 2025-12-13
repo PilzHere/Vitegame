@@ -16,6 +16,9 @@ import basicFragShader from '../assets/shaders/basic/basic.frag?raw';
 import texturedVertShader from '../assets/shaders/textured/textured.vert?raw';
 import texturedFragShader from '../assets/shaders/textured/textured.frag?raw';
 
+// Import sound assets (Vite will resolve the correct URL)
+import bounceSound from '../assets/sound/sfx/faahhh.mp3';
+
 export default class Game {
     constructor() {
         this.renderer = new Renderer();
@@ -151,7 +154,7 @@ export default class Game {
             {
                 type: 'sound',
                 name: 'bounce',
-                url: '/src/assets/sound/sfx/faahhh.mp3'
+                url: bounceSound
             },
             {
                 type: 'atlas',
